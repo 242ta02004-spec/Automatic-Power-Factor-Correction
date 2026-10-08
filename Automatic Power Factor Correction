@@ -1,0 +1,129 @@
+// Automatic Power Factor Correction (APFC)
+// EEE Mini Project - Java Simulation
+
+import java.util.Scanner;
+
+public class APFC {
+
+    // Capacitor bank steps in kVAR
+    static double[] capacitorSteps = {1, 2, 3, 5, 10};
+
+    public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("======================================");
+        System.out.println("   AUTOMATIC POWER FACTOR CORRECTION");
+        System.out.println("======================================");
+
+        System.out.print("Enter Active Power (kW): ");
+        double activePower = sc.nextDouble();
+
+        System.out.print("Enter Initial Power Factor: ");
+        double initialPF = sc.nextDouble();
+
+        System.out.print("Enter Desired Power Factor: ");
+        double targetPF = sc.nextDouble();
+
+        if (initialPF <= 0 || initialPF > 1 ||
+            targetPF <= 0 || targetPF > 1 ||
+            activePower <= 0) {
+
+            System.out.println("Invalid input!");
+            sc.close();
+            return;
+        }
+
+        // Apparent power
+        double apparentPower = activePower / initialPF;
+
+        // Initial reactive power
+        double initialReactivePower =
+                Math.sqrt(
+                    (apparentPower * apparentPower) -
+                    (activePower * activePower)
+                );
+
+        // Reactive power required after correction
+        double targetReactivePower =
+                activePower *
+                Math.tan(Math.acos(targetPF));
+
+        // Required capacitor kVAR
+        double requiredKVAR =
+                initialReactivePower - targetReactivePower;
+
+        if (requiredKVAR < 0) {
+            requiredKVAR = 0;
+        }
+
+        System.out.println("\n========== BEFORE CORRECTION ==========");
+        System.out.printf("Active Power       : %.2f kW%n", activePower);
+        System.out.printf("Initial PF         : %.3f%n", initialPF);
+        System.out.printf("Apparent Power     : %.2f kVA%n", apparentPower);
+        System.out.printf("Reactive Power     : %.2f kVAR%n",
+                          initialReactivePower);
+
+        System.out.println("\nRequired Capacitor : "
+                           + String.format("%.2f", requiredKVAR)
+                           + " kVAR");
+
+        // Select capacitor steps
+        double selectedKVAR = 0;
+
+        for (double step : capacitorSteps) {
+
+            if (selectedKVAR < requiredKVAR) {
+                selectedKVAR += step;
+            }
+
+            if (selectedKVAR >= requiredKVAR) {
+                break;
+            }
+        }
+
+        // Calculate corrected reactive power
+        double correctedReactivePower =
+                initialReactivePower - selectedKVAR;
+
+        if (correctedReactivePower < 0) {
+            correctedReactivePower = 0;
+        }
+
+        // Calculate corrected apparent power
+        double correctedApparentPower =
+                Math.sqrt(
+                    (activePower * activePower) +
+                    (correctedReactivePower *
+                     correctedReactivePower)
+                );
+
+        // Calculate corrected PF
+        double correctedPF =
+                activePower / correctedApparentPower;
+
+        System.out.println("\n========== AFTER CORRECTION ==========");
+
+        System.out.printf("Capacitor Selected : %.2f kVAR%n",
+                          selectedKVAR);
+
+        System.out.printf("Reactive Power     : %.2f kVAR%n",
+                          correctedReactivePower);
+
+        System.out.printf("Apparent Power     : %.2f kVA%n",
+                          correctedApparentPower);
+
+        System.out.printf("Corrected PF       : %.3f%n",
+                          correctedPF);
+
+        if (correctedPF >= targetPF) {
+            System.out.println("\nStatus: POWER FACTOR IMPROVED");
+        } else {
+            System.out.println("\nStatus: ADDITIONAL CAPACITOR REQUIRED");
+        }
+
+        System.out.println("======================================");
+
+        sc.close();
+    }
+}
